@@ -66,6 +66,11 @@ router.get('/api/note/list', async (ctx, next) => {
   console.log('body', ctx.request.body);
   console.log('params', ctx.request.query);
   const login_uuid = ctx.request.headers.token;
+  // const login_uuid = ctx.request.headers.token;
+  // const { user_uuid: user_uuid_from_params } = ctx.request.params;
+  const { user_uuid: user_uuid_from_params } = ctx.request.query;
+  console.log('ctx.request.params', ctx.request.params.user_uuid)
+  console.log('user_uuid_from_params', user_uuid_from_params)
   if (!login_uuid) {
     ctx.body = resInfo.userNotLogin();
     return ;
@@ -88,6 +93,15 @@ router.get('/api/note/list', async (ctx, next) => {
     ctx.body = resInfo.userNotLogin();
     return ;
   }
+  const loginResultRole = await mysqlQuery(`select * from user where uuid = "${encodeSqlParams(user_uuid)}";`);
+  const { role } = loginResultRole.data[0] || {}
+  console.log('role', role)
+  if (role === 1) {
+    const result = await mysqlQuery(`select * from note where user_uuid = '${encodeSqlParams(user_uuid_from_params)}' and is_delete = 0 order by id desc`);
+    console.log("result", result)
+    ctx.body = JSON.stringify(result, null, 2);
+    return ;
+  }
   const result = await mysqlQuery(`select * from note where user_uuid = '${encodeSqlParams(user_uuid)}' and is_delete = 0 order by id desc`);
   console.log("result", result)
   ctx.body = JSON.stringify(result, null, 2);
@@ -98,6 +112,11 @@ router.post('/api/note/add', async (ctx, next) => {
   const uuid = uuidv4();
   console.log('body', ctx.request.body);
   const login_uuid = ctx.request.headers.token;
+  // const login_uuid = ctx.request.headers.token;
+  // const { user_uuid: user_uuid_from_body } = ctx.request.params;
+  const { user_uuid: user_uuid_from_body } = ctx.request.body;
+  console.log('ctx.request.params', ctx.request.params.user_uuid)
+  console.log('user_uuid_from_body', user_uuid_from_body)
   if (!login_uuid) {
     ctx.body = resInfo.userNotLogin();
     return ;
@@ -122,6 +141,16 @@ router.post('/api/note/add', async (ctx, next) => {
     ctx.body = resInfo.userNotLogin();
     return ;
   }
+  const loginResultRole = await mysqlQuery(`select * from user where uuid = "${encodeSqlParams(user_uuid)}";`);
+  const { role } = loginResultRole.data[0] || {}
+  console.log('role', role)
+  if (role === 1) {
+    // const result = await mysqlQuery(`select * from note where user_uuid = '${encodeSqlParams(user_uuid_from_body)}' and is_delete = 0 order by id desc`);
+  const result = await mysqlQuery(`insert into note ( uuid, user_uuid, content ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(user_uuid_from_body)}", "${encodeSqlParams(content)}" );`);
+    console.log("result", result)
+    ctx.body = JSON.stringify(result, null, 2);
+    return ;
+  }
   const result = await mysqlQuery(`insert into note ( uuid, user_uuid, content ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(user_uuid)}", "${encodeSqlParams(content)}" );`);
   console.log("result", result)
   ctx.body = JSON.stringify(result, null, 2);
@@ -132,6 +161,11 @@ router.post('/api/note/del', async (ctx, next) => {
   // const uuid = uuidv4();
   console.log('body', ctx.request.body);
   const login_uuid = ctx.request.headers.token;
+  // const login_uuid = ctx.request.headers.token;
+  // const { user_uuid: user_uuid_from_params } = ctx.request.params;
+  const { user_uuid: user_uuid_from_body } = ctx.request.body;
+  console.log('ctx.request.params', ctx.request.params.user_uuid)
+  console.log('user_uuid_from_body', user_uuid_from_body)
   if (!login_uuid) {
     ctx.body = resInfo.userNotLogin();
     return ;
@@ -155,6 +189,17 @@ router.post('/api/note/del', async (ctx, next) => {
     ctx.body = resInfo.userNotLogin();
     return ;
   }
+  const loginResultRole = await mysqlQuery(`select * from user where uuid = "${encodeSqlParams(user_uuid)}";`);
+  const { role } = loginResultRole.data[0] || {}
+  console.log('role', role)
+  if (role === 1) {
+    // const result = await mysqlQuery(`select * from note where user_uuid = '${encodeSqlParams(user_uuid_from_body)}' and is_delete = 0 order by id desc`);
+  // const result = await mysqlQuery(`insert into note ( uuid, user_uuid, content ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(user_uuid_from_body)}", "${encodeSqlParams(content)}" );`);
+  const result = await mysqlQuery(`update note set is_delete = 1 where user_uuid = "${encodeSqlParams(user_uuid_from_body)}" and  uuid = "${encodeSqlParams(noteUuid)}";`);
+    console.log("result", result)
+    ctx.body = JSON.stringify(result, null, 2);
+    return ;
+  }
   const result = await mysqlQuery(`update note set is_delete = 1 where user_uuid = "${encodeSqlParams(user_uuid)}" and  uuid = "${encodeSqlParams(noteUuid)}";`);
   console.log("result", result)
   ctx.body = JSON.stringify(result, null, 2);
@@ -165,6 +210,11 @@ router.post('/api/note/modify', async (ctx, next) => {
   // const uuid = uuidv4();
   console.log('body', ctx.request.body);
   const login_uuid = ctx.request.headers.token;
+  // const login_uuid = ctx.request.headers.token;
+  // const { user_uuid: user_uuid_from_params } = ctx.request.params;
+  const { user_uuid: user_uuid_from_body } = ctx.request.body;
+  console.log('ctx.request.params', ctx.request.params.user_uuid)
+  console.log('user_uuid_from_body', user_uuid_from_body)
   if (!login_uuid) {
     ctx.body = resInfo.userNotLogin();
     return ;
@@ -192,6 +242,18 @@ router.post('/api/note/modify', async (ctx, next) => {
     ctx.body = resInfo.userNotLogin();
     return ;
   }
+  const loginResultRole = await mysqlQuery(`select * from user where uuid = "${encodeSqlParams(user_uuid)}";`);
+  const { role } = loginResultRole.data[0] || {}
+  console.log('role', role)
+  if (role === 1) {
+    // const result = await mysqlQuery(`select * from note where user_uuid = '${encodeSqlParams(user_uuid_from_body)}' and is_delete = 0 order by id desc`);
+  // const result = await mysqlQuery(`insert into note ( uuid, user_uuid, content ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(user_uuid_from_body)}", "${encodeSqlParams(content)}" );`);
+  // const result = await mysqlQuery(`update note set is_delete = 1 where user_uuid = "${encodeSqlParams(user_uuid_from_body)}" and  uuid = "${encodeSqlParams(noteUuid)}";`);
+  const result = await mysqlQuery(`update note set content = "${encodeSqlParams(content)}" where user_uuid = "${encodeSqlParams(user_uuid_from_body)}" and uuid = "${encodeSqlParams(noteUuid)}";`);
+    console.log("result", result)
+    ctx.body = JSON.stringify(result, null, 2);
+    return ;
+  }
   const result = await mysqlQuery(`update note set content = "${encodeSqlParams(content)}" where user_uuid = "${encodeSqlParams(user_uuid)}" and uuid = "${encodeSqlParams(noteUuid)}";`);
   console.log("result", result)
   ctx.body = JSON.stringify(result, null, 2);
@@ -203,6 +265,11 @@ router.post('/api/user/add', async (ctx, next) => {
   console.log('body', ctx.request.body);
   console.log('login_uuid', ctx.request.headers.token)
   const login_uuid = ctx.request.headers.token;
+  // // const login_uuid = ctx.request.headers.token;
+  // // const { user_uuid: user_uuid_from_body } = ctx.request.params;
+  // const { user_uuid: user_uuid_from_body } = ctx.request.body;
+  // console.log('ctx.request.params', ctx.request.params.user_uuid)
+  // console.log('user_uuid_from_body', user_uuid_from_body)
   // if (!login_uuid) {
   //   ctx.body = resInfo.userNotLogin();
   //   return ;
@@ -244,9 +311,23 @@ router.post('/api/user/add', async (ctx, next) => {
   //   ctx.body = resInfo.ziduanCannotEmpty('content');
   //   return ;
   // }
+  const loginResultRole = await mysqlQuery(`select * from user where uuid = "${encodeSqlParams(user_uuid)}";`);
+  const { role } = loginResultRole.data[0] || {}
+  console.log('role', role)
+  if (role === 1) {
+    // const result = await mysqlQuery(`select * from note where user_uuid = '${encodeSqlParams(user_uuid_from_body)}' and is_delete = 0 order by id desc`);
+  // const result = await mysqlQuery(`insert into note ( uuid, user_uuid, content ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(user_uuid_from_body)}", "${encodeSqlParams(content)}" );`);
+  // const result = await mysqlQuery(`update note set is_delete = 1 where user_uuid = "${encodeSqlParams(user_uuid_from_body)}" and  uuid = "${encodeSqlParams(noteUuid)}";`);
+  // const result = await mysqlQuery(`update user set is_delete = 1 where uuid = "${encodeSqlParams(user_uuid_from_body)}";`);
   const result = await mysqlQuery(`insert into user ( uuid, name, pass ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(name)}", "${encodeSqlParams(pass)}"  );`);
-  console.log("result", result)
-  ctx.body = JSON.stringify(result, null, 2);
+    console.log("result", result)
+    ctx.body = JSON.stringify(result, null, 2);
+    return ;
+  }
+  // const result = await mysqlQuery(`insert into user ( uuid, name, pass ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(name)}", "${encodeSqlParams(pass)}"  );`);
+  // console.log("result", result)
+  // ctx.body = JSON.stringify(result, null, 2);
+  ctx.body = resInfo.userNotLogin();
 });
 
 router.post('/api/user/del', async (ctx, next) => {
@@ -259,6 +340,11 @@ router.post('/api/user/del', async (ctx, next) => {
   //   return ;
   // }
   const login_uuid = ctx.request.headers.token;
+  // // const login_uuid = ctx.request.headers.token;
+  // // const { user_uuid: user_uuid_from_body } = ctx.request.params;
+  // const { user_uuid: user_uuid_from_body } = ctx.request.body;
+  // console.log('ctx.request.params', ctx.request.params.user_uuid)
+  // console.log('user_uuid_from_body', user_uuid_from_body)
   if (!login_uuid) {
     ctx.body = resInfo.userNotLogin();
     return ;
@@ -277,9 +363,23 @@ router.post('/api/user/del', async (ctx, next) => {
     ctx.body = resInfo.userNotLogin();
     return ;
   }
-  const result = await mysqlQuery(`update user set is_delete = 1 where uuid = "${encodeSqlParams(user_uuid)}";`);
-  console.log("result", result)
-  ctx.body = JSON.stringify(result, null, 2);
+  const loginResultRole = await mysqlQuery(`select * from user where uuid = "${encodeSqlParams(user_uuid)}";`);
+  const { role } = loginResultRole.data[0] || {}
+  console.log('role', role)
+  if (role === 1) {
+    // const result = await mysqlQuery(`select * from note where user_uuid = '${encodeSqlParams(user_uuid_from_body)}' and is_delete = 0 order by id desc`);
+  // const result = await mysqlQuery(`insert into note ( uuid, user_uuid, content ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(user_uuid_from_body)}", "${encodeSqlParams(content)}" );`);
+  // const result = await mysqlQuery(`update note set is_delete = 1 where user_uuid = "${encodeSqlParams(user_uuid_from_body)}" and  uuid = "${encodeSqlParams(noteUuid)}";`);
+  const result = await mysqlQuery(`update user set is_delete = 1 where uuid = "${encodeSqlParams(user_uuid_from_body)}";`);
+    console.log("result", result)
+    ctx.body = JSON.stringify(result, null, 2);
+    return ;
+  }
+  // const result = await mysqlQuery(`update user set is_delete = 1 where uuid = "${encodeSqlParams(user_uuid)}";`);
+  // console.log("result", result)
+  // ctx.body = JSON.stringify(result, null, 2);
+  // ctx.body = JSON.stringify({ status: -1, data: {}, msg: '用户未登录' }, null, 2);
+  ctx.body = resInfo.userNotLogin();
 });
 
 router.post('/api/user/modify', async (ctx, next) => {
@@ -301,6 +401,11 @@ router.post('/api/user/modify', async (ctx, next) => {
     return ;
   }
   const login_uuid = ctx.request.headers.token;
+  // // const login_uuid = ctx.request.headers.token;
+  // // const { user_uuid: user_uuid_from_body } = ctx.request.params;
+  // const { user_uuid: user_uuid_from_body } = ctx.request.body;
+  // console.log('ctx.request.params', ctx.request.params.user_uuid)
+  // console.log('user_uuid_from_body', user_uuid_from_body)
   if (!login_uuid) {
     ctx.body = resInfo.userNotLogin();
     return ;
@@ -322,9 +427,23 @@ router.post('/api/user/modify', async (ctx, next) => {
     ctx.body = { status: -1, data: '', msg: 'token无效' }
     return ;
   }
-  const result = await mysqlQuery(`update user set pass = "${encodeSqlParams(pass)}" where uuid = "${encodeSqlParams(user_uuid)}";`);
-  console.log("result", result)
-  ctx.body = JSON.stringify(result, null, 2);
+  const loginResultRole = await mysqlQuery(`select * from user where uuid = "${encodeSqlParams(user_uuid)}";`);
+  const { role } = loginResultRole.data[0] || {}
+  console.log('role', role)
+  if (role === 1) {
+    // const result = await mysqlQuery(`select * from note where user_uuid = '${encodeSqlParams(user_uuid_from_body)}' and is_delete = 0 order by id desc`);
+  // const result = await mysqlQuery(`insert into note ( uuid, user_uuid, content ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(user_uuid_from_body)}", "${encodeSqlParams(content)}" );`);
+  // const result = await mysqlQuery(`update note set is_delete = 1 where user_uuid = "${encodeSqlParams(user_uuid_from_body)}" and  uuid = "${encodeSqlParams(noteUuid)}";`);
+  // const result = await mysqlQuery(`update user set is_delete = 1 where uuid = "${encodeSqlParams(user_uuid_from_body)}";`);
+  const result = await mysqlQuery(`update user set pass = "${encodeSqlParams(pass)}" where uuid = "${encodeSqlParams(user_uuid_from_body)}";`);
+    console.log("result", result)
+    ctx.body = JSON.stringify(result, null, 2);
+    return ;
+  }
+  // const result = await mysqlQuery(`update user set pass = "${encodeSqlParams(pass)}" where uuid = "${encodeSqlParams(user_uuid)}";`);
+  // console.log("result", result)
+  // ctx.body = JSON.stringify(result, null, 2);
+  ctx.body = resInfo.userNotLogin();
 });
 
 router.get('/api/user/list', async (ctx, next) => {
@@ -337,6 +456,11 @@ router.get('/api/user/list', async (ctx, next) => {
   //   return ;
   // }
   const login_uuid = ctx.request.headers.token;
+  // // const login_uuid = ctx.request.headers.token;
+  // // const { user_uuid: user_uuid_from_body } = ctx.request.params;
+  // const { user_uuid: user_uuid_from_body } = ctx.request.body;
+  // console.log('ctx.request.params', ctx.request.params.user_uuid)
+  // console.log('user_uuid_from_body', user_uuid_from_body)
   // if (!login_uuid) {
   //   ctx.body = JSON.stringify({
   //     status: -1,
@@ -368,9 +492,26 @@ router.get('/api/user/list', async (ctx, next) => {
   //   ctx.body = resInfo.ziduanCannotEmpty('uuid');
   //   return ;
   // }
+
+  const loginResultRole = await mysqlQuery(`select * from user where uuid = "${encodeSqlParams(user_uuid)}";`);
+  const { role } = loginResultRole.data[0] || {}
+  console.log('role', role)
+  if (role === 1) {
+    // const result = await mysqlQuery(`select * from note where user_uuid = '${encodeSqlParams(user_uuid_from_body)}' and is_delete = 0 order by id desc`);
+  // const result = await mysqlQuery(`insert into note ( uuid, user_uuid, content ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(user_uuid_from_body)}", "${encodeSqlParams(content)}" );`);
+  // const result = await mysqlQuery(`update note set is_delete = 1 where user_uuid = "${encodeSqlParams(user_uuid_from_body)}" and  uuid = "${encodeSqlParams(noteUuid)}";`);
+  // const result = await mysqlQuery(`update user set is_delete = 1 where uuid = "${encodeSqlParams(user_uuid_from_body)}";`);
+  // const result = await mysqlQuery(`update user set pass = "${encodeSqlParams(pass)}" where uuid = "${encodeSqlParams(user_uuid_from_body)}";`);
   const result = await mysqlQuery(`select * from user;`);
-  console.log("result", result)
-  ctx.body = JSON.stringify(result, null, 2);
+    console.log("result", result)
+    ctx.body = JSON.stringify(result, null, 2);
+    return ;
+  }
+  // const result = await mysqlQuery(`select * from user;`);
+  // console.log("result", result)
+  // ctx.body = JSON.stringify(result, null, 2);
+  // ctx.body = JSON.stringify({ status: -1, data: {}, msg: '用户未登录' }, null, 2);
+  ctx.body = resInfo.userNotLogin();
 });
 
 router.get('/api/user/name', async (ctx, next) => {
@@ -491,6 +632,75 @@ router.post('/api/user/login', async (ctx, next) => {
   }, null, 2);
 });
 
+router.post('/api/user/login/admin', async (ctx, next) => {
+  // console.log("uuidV4", uuidv4())
+  const uuid = uuidv4();
+  console.log('body', ctx.request.body);
+  const { name, pass } = ctx.request.body;
+  if (!name) {
+    ctx.body = resInfo.ziduanCannotEmpty('name');
+    return ;
+  }
+  if (!pass) {
+    ctx.body = resInfo.ziduanCannotEmpty('login_uuid');
+    return ;
+  }
+  const checkLogin = await mysqlQuery(`select * from user where role = 1 and name = "${encodeSqlParams(name)}" and pass = "${encodeSqlParams(pass)}"`);
+  console.log('checkLogin', checkLogin);
+  if ( !checkLogin.data.length ) {
+    ctx.body = JSON.stringify({
+      status: -1,
+      data: [],
+      msg: '用户名或密码错误'
+    }, null, 2);
+    return ;
+  }
+  // const login_uuid = ctx.request.headers.token;
+  // // if (!login_uuid) {
+  // //   ctx.body = JSON.stringify({
+  // //     status: -1,
+  // //     data: [],
+  // //     msg: '用户未登录'
+  // //   }, null, 2);
+  // //   return ;
+  // // }
+  // if (!login_uuid) {
+  //   ctx.body = resInfo.userNotLogin();
+  //   return ;
+  // }
+  // const loginResult = await mysqlQuery(`select * from login where uuid = "${encodeSqlParams(login_uuid)}" limit 1;`);
+  // const { user_uuid } = loginResult.data[0] || {}
+  // // if (!user_uuid) {
+  // //   ctx.body = JSON.stringify({
+  // //     status: -1,
+  // //     data: [],
+  // //     msg: '用户未登录'
+  // //   }, null, 2);
+  // //   return ;
+  // // }
+  // if (!user_uuid) {
+  //   ctx.body = resInfo.userNotLogin();
+  //   return ;
+  // }
+  // const { uuid } = ctx.request.body;
+  // if (!uuid) {
+  //   ctx.body = resInfo.ziduanCannotEmpty('uuid');
+  //   return ;
+  // }
+  const result = await mysqlQuery(`insert into login ( uuid, user_uuid ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(checkLogin.data[0].uuid)}" );`);
+  console.log("result", result)
+  // ctx.response.header = { token: uuid }
+  ctx.set('token', uuid);
+  // ctx.body = JSON.stringify(result, null, 2);
+  ctx.body = JSON.stringify({
+    status: 0,
+    data: {
+      token: uuid
+    },
+    msg: ''
+  }, null, 2);
+});
+
 router.get('/api/login/list', async (ctx, next) => {
   // console.log("uuidV4", uuidv4())
   // const uuid = uuidv4();
@@ -524,6 +734,20 @@ router.get('/api/login/list', async (ctx, next) => {
   //   return ;
   // }
   if (!user_uuid) {
+    ctx.body = resInfo.userNotLogin();
+    return ;
+  }
+  const loginResultRole = await mysqlQuery(`select * from user where uuid = "${user_uuid}";`);
+  const { role } = loginResultRole.data[0] || {}
+  // if (!user_uuid) {
+  //   ctx.body = JSON.stringify({
+  //     status: -1,
+  //     data: [],
+  //     msg: '用户未登录'
+  //   }, null, 2);
+  //   return ;
+  // }
+  if (!role) {
     ctx.body = resInfo.userNotLogin();
     return ;
   }
