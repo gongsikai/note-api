@@ -81,6 +81,7 @@ router.get('/api/note/list', async (ctx, next) => {
 
   const loginResult = await mysqlQuery(`select * from login where uuid = "${encodeSqlParams(login_uuid)}" limit 1;`);
   const { user_uuid } = loginResult.data[0] || {}
+  console.log('note/list user_uuid', user_uuid)
   // if (!user_uuid) {
   //   ctx.body = JSON.stringify({
   //     status: -1,
@@ -101,6 +102,8 @@ router.get('/api/note/list', async (ctx, next) => {
     console.log("result", result)
     ctx.body = JSON.stringify(result, null, 2);
     return ;
+    // ctx.body = resInfo.userNotLogin();
+    // return ;
   }
   const result = await mysqlQuery(`select * from note where user_uuid = '${encodeSqlParams(user_uuid)}' and is_delete = 0 order by id desc`);
   console.log("result", result)
@@ -283,13 +286,13 @@ router.post('/api/user/add', async (ctx, next) => {
     ctx.body = resInfo.ziduanCannotEmpty('pass');
     return ;
   }
-  const checkIsUserExists = await mysqlQuery(`select * from user where name = "${encodeSqlParams(name)}";`);
+  const checkIsUserExists = await mysqlQuery(`select * from user where name = "${encodeSqlParams(name)}" and is_delete = 0 and role = 2;`);
   if (checkIsUserExists.data.length) {
     ctx.body = resInfo.userAlreadyExists();
     return ;
   }
-  // const loginResult = await mysqlQuery(`select * from login where uuid = "${encodeSqlParams(login_uuid)}" limit 1;`);
-  // const { user_uuid } = loginResult.data[0] || {}
+  const loginResult = await mysqlQuery(`select * from login where uuid = "${encodeSqlParams(login_uuid)}" limit 1;`);
+  const { user_uuid } = loginResult.data[0] || {}
   // if (!user_uuid) {
   //   ctx.body = JSON.stringify({
   //     status: -1,
@@ -324,10 +327,10 @@ router.post('/api/user/add', async (ctx, next) => {
     ctx.body = JSON.stringify(result, null, 2);
     return ;
   }
-  // const result = await mysqlQuery(`insert into user ( uuid, name, pass ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(name)}", "${encodeSqlParams(pass)}"  );`);
-  // console.log("result", result)
-  // ctx.body = JSON.stringify(result, null, 2);
-  ctx.body = resInfo.userNotLogin();
+  const result = await mysqlQuery(`insert into user ( uuid, name, pass ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(name)}", "${encodeSqlParams(pass)}"  );`);
+  console.log("result", result)
+  ctx.body = JSON.stringify(result, null, 2);
+  // ctx.body = resInfo.userNotLogin();
 });
 
 router.post('/api/user/del', async (ctx, next) => {
@@ -340,11 +343,11 @@ router.post('/api/user/del', async (ctx, next) => {
   //   return ;
   // }
   const login_uuid = ctx.request.headers.token;
-  // // const login_uuid = ctx.request.headers.token;
-  // // const { user_uuid: user_uuid_from_body } = ctx.request.params;
-  // const { user_uuid: user_uuid_from_body } = ctx.request.body;
-  // console.log('ctx.request.params', ctx.request.params.user_uuid)
-  // console.log('user_uuid_from_body', user_uuid_from_body)
+  // const login_uuid = ctx.request.headers.token;
+  // const { user_uuid: user_uuid_from_body } = ctx.request.params;
+  const { uuid: uuid_from_body } = ctx.request.body;
+  console.log('ctx.request.params', ctx.request.params.uuid)
+  console.log('uuid_from_body', uuid_from_body)
   if (!login_uuid) {
     ctx.body = resInfo.userNotLogin();
     return ;
@@ -370,7 +373,7 @@ router.post('/api/user/del', async (ctx, next) => {
     // const result = await mysqlQuery(`select * from note where user_uuid = '${encodeSqlParams(user_uuid_from_body)}' and is_delete = 0 order by id desc`);
   // const result = await mysqlQuery(`insert into note ( uuid, user_uuid, content ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(user_uuid_from_body)}", "${encodeSqlParams(content)}" );`);
   // const result = await mysqlQuery(`update note set is_delete = 1 where user_uuid = "${encodeSqlParams(user_uuid_from_body)}" and  uuid = "${encodeSqlParams(noteUuid)}";`);
-  const result = await mysqlQuery(`update user set is_delete = 1 where uuid = "${encodeSqlParams(user_uuid_from_body)}";`);
+  const result = await mysqlQuery(`update user set is_delete = 1 where uuid = "${encodeSqlParams(uuid_from_body)}";`);
     console.log("result", result)
     ctx.body = JSON.stringify(result, null, 2);
     return ;
@@ -401,11 +404,11 @@ router.post('/api/user/modify', async (ctx, next) => {
     return ;
   }
   const login_uuid = ctx.request.headers.token;
-  // // const login_uuid = ctx.request.headers.token;
-  // // const { user_uuid: user_uuid_from_body } = ctx.request.params;
-  // const { user_uuid: user_uuid_from_body } = ctx.request.body;
-  // console.log('ctx.request.params', ctx.request.params.user_uuid)
-  // console.log('user_uuid_from_body', user_uuid_from_body)
+  // const login_uuid = ctx.request.headers.token;
+  // const { user_uuid: user_uuid_from_body } = ctx.request.params;
+  const { uuid: uuid_from_body } = ctx.request.body;
+  console.log('ctx.request.params', ctx.request.params.uuid)
+  console.log('uuid_from_body', uuid_from_body)
   if (!login_uuid) {
     ctx.body = resInfo.userNotLogin();
     return ;
@@ -417,7 +420,7 @@ router.post('/api/user/modify', async (ctx, next) => {
     return ;
   }
   // const { uuid,  } = ctx.request.body;
-  if (!uuid) {
+  if (!uuid_from_body) {
     ctx.body = resInfo.ziduanCannotEmpty('uuid');
     return ;
   }
@@ -435,7 +438,7 @@ router.post('/api/user/modify', async (ctx, next) => {
   // const result = await mysqlQuery(`insert into note ( uuid, user_uuid, content ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(user_uuid_from_body)}", "${encodeSqlParams(content)}" );`);
   // const result = await mysqlQuery(`update note set is_delete = 1 where user_uuid = "${encodeSqlParams(user_uuid_from_body)}" and  uuid = "${encodeSqlParams(noteUuid)}";`);
   // const result = await mysqlQuery(`update user set is_delete = 1 where uuid = "${encodeSqlParams(user_uuid_from_body)}";`);
-  const result = await mysqlQuery(`update user set pass = "${encodeSqlParams(pass)}" where uuid = "${encodeSqlParams(user_uuid_from_body)}";`);
+  const result = await mysqlQuery(`update user set pass = "${encodeSqlParams(pass)}" where uuid = "${encodeSqlParams(uuid_from_body)}";`);
     console.log("result", result)
     ctx.body = JSON.stringify(result, null, 2);
     return ;
@@ -498,11 +501,11 @@ router.get('/api/user/list', async (ctx, next) => {
   console.log('role', role)
   if (role === 1) {
     // const result = await mysqlQuery(`select * from note where user_uuid = '${encodeSqlParams(user_uuid_from_body)}' and is_delete = 0 order by id desc`);
-  // const result = await mysqlQuery(`insert into note ( uuid, user_uuid, content ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(user_uuid_from_body)}", "${encodeSqlParams(content)}" );`);
-  // const result = await mysqlQuery(`update note set is_delete = 1 where user_uuid = "${encodeSqlParams(user_uuid_from_body)}" and  uuid = "${encodeSqlParams(noteUuid)}";`);
-  // const result = await mysqlQuery(`update user set is_delete = 1 where uuid = "${encodeSqlParams(user_uuid_from_body)}";`);
-  // const result = await mysqlQuery(`update user set pass = "${encodeSqlParams(pass)}" where uuid = "${encodeSqlParams(user_uuid_from_body)}";`);
-  const result = await mysqlQuery(`select * from user;`);
+    // const result = await mysqlQuery(`insert into note ( uuid, user_uuid, content ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(user_uuid_from_body)}", "${encodeSqlParams(content)}" );`);
+    // const result = await mysqlQuery(`update note set is_delete = 1 where user_uuid = "${encodeSqlParams(user_uuid_from_body)}" and  uuid = "${encodeSqlParams(noteUuid)}";`);
+    // const result = await mysqlQuery(`update user set is_delete = 1 where uuid = "${encodeSqlParams(user_uuid_from_body)}";`);
+    // const result = await mysqlQuery(`update user set pass = "${encodeSqlParams(pass)}" where uuid = "${encodeSqlParams(user_uuid_from_body)}";`);
+    const result = await mysqlQuery(`select * from user where is_delete = 0 and role = 2 order by id desc;`);
     console.log("result", result)
     ctx.body = JSON.stringify(result, null, 2);
     return ;
@@ -576,7 +579,7 @@ router.post('/api/user/login', async (ctx, next) => {
     ctx.body = resInfo.ziduanCannotEmpty('login_uuid');
     return ;
   }
-  const checkLogin = await mysqlQuery(`select * from user where name = "${encodeSqlParams(name)}" and pass = "${encodeSqlParams(pass)}"`);
+  const checkLogin = await mysqlQuery(`select * from user where name = "${encodeSqlParams(name)}" and pass = "${encodeSqlParams(pass)}" and role = 2`);
   console.log('checkLogin', checkLogin);
   if ( !checkLogin.data.length ) {
     ctx.body = JSON.stringify({
