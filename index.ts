@@ -16,13 +16,15 @@ import * as cors from "@koa/cors";
 
 import { v4 as uuidv4 } from "uuid";
 
+const Payment = require('wxpay-v3');
+
 const app = new Koa();
 const router = new Router();
 
 const connection = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "12345",
+  password: "root",
   database: "notes"
 });
 
@@ -763,6 +765,91 @@ router.get('/api/login/list', async (ctx, next) => {
   console.log("result", result)
   ctx.body = JSON.stringify(result, null, 2);
 });
+
+router.post('/api/pay/add', async (ctx, next) => {
+  // console.log("uuidV4", uuidv4())
+  const uuid = uuidv4();
+  console.log('body', ctx.request.body);
+  const login_uuid = ctx.request.headers.token;
+  // const login_uuid = ctx.request.headers.token;
+  // const { user_uuid: user_uuid_from_body } = ctx.request.params;
+  const { user_uuid: user_uuid_from_body } = ctx.request.body;
+  const { desc, amount } = ctx.request.body;
+  console.log('ctx.request.params', ctx.request.params.user_uuid)
+  console.log('user_uuid_from_body', user_uuid_from_body)
+  if (!login_uuid) {
+    ctx.body = resInfo.userNotLogin();
+    return ;
+  }
+  const { content } = ctx.request.body;
+  if (!desc) {
+    ctx.body = resInfo.ziduanCannotEmpty('desc');
+    return ;
+  }
+
+  if (!amount) {
+    ctx.body = resInfo.ziduanCannotEmpty('amount');
+    return ;
+  }
+    
+  const loginResult = await mysqlQuery(`select * from login where uuid = "${encodeSqlParams(login_uuid)}" limit 1;`);
+  const { user_uuid } = loginResult.data[0] || {}
+  // if (!user_uuid) {
+  //   ctx.body = JSON.stringify({
+  //     status: -1,
+  //     data: [],
+  //     msg: '用户未登录'
+  //   }, null, 2);
+  //   return ;
+  // }
+  if (!user_uuid) {
+    ctx.body = resInfo.userNotLogin();
+    return ;
+  }
+  const loginResultRole = await mysqlQuery(`select * from user where uuid = "${encodeSqlParams(user_uuid)}";`);
+  const { role } = loginResultRole.data[0] || {}
+  console.log('role', role)
+  if (role === 1) {
+    // const result = await mysqlQuery(`select * from note where user_uuid = '${encodeSqlParams(user_uuid_from_body)}' and is_delete = 0 order by id desc`);
+  const result = await mysqlQuery(`insert into note ( uuid, user_uuid, content ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(user_uuid_from_body)}", "${encodeSqlParams(content)}" );`);
+    console.log("result", result)
+    ctx.body = JSON.stringify(result, null, 2);
+    return ;
+  }
+  const result = await mysqlQuery(`insert into note ( uuid, user_uuid, content ) values ( "${encodeSqlParams(uuid)}", "${encodeSqlParams(user_uuid)}", "${encodeSqlParams(content)}" );`);
+
+
+  const payment = new Payment({
+      appid: 'wxdb000329f81e984e',
+      mchid: '1626740994',
+      private_key: require('fs').readFileSync('./cert/apiclient_key.pem').toString(),//或者直接复制证书文件内容
+      serial_no:'673D69E34F364639A3AD47D1B61DC06D0FA51C76',
+      apiv3_private_key:'sdfgdrdfvcxdffvcdedsdfredfdcxfde',
+      notify_url: 'https://shopping.gongsikai.com',
+  })
+
+  console.log('payment', payment);
+
+  // const run = async () => {
+  let resultPay = await payment.native({
+    description: desc,
+    out_trade_no:Date.now().toString(),
+    amount:{
+        total: +amount
+    }
+  })
+  // console.log(result)
+  console.log(resultPay)
+  // }
+
+  // run()
+
+  console.log("result", result)
+  // ctx.body = JSON.stringify(result, null, 2);
+  ctx.body = JSON.stringify({ status: 0, data: JSON.parse(resultPay.data || "{}"), msg: '' }, null, 2);
+});
+
+
 
 app
   .use(koaBody())
