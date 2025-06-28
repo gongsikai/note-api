@@ -850,8 +850,54 @@ router.post('/api/pay/add', async (ctx, next) => {
 });
 
 
+const ipEndpointRequestMap = new Map(); // 使用Map存储IP和端点的请求记录
 
-app
+const rateLimitMiddleware = async (ctx, next) => {
+  // 跳过OPTIONS请求的速率限制
+  if (ctx.method === 'OPTIONS') {
+    return await next();
+  }
+
+  const clientIp = ctx.ip;
+  const endpoint = ctx.path; // 获取请求的路径
+  const currentTime = Date.now();
+  
+  // 为IP和端点组合创建一个唯一键
+  const key = `${clientIp}-${endpoint}`;
+
+  // 检查是否存在该IP和端点的请求记录
+  if (ipEndpointRequestMap.has(key)) {
+    const lastRequestTime = ipEndpointRequestMap.get(key);
+    // 计算两次请求的时间间隔
+    const timeDifference = currentTime - lastRequestTime;
+    
+    // 如果时间间隔小于5秒(5000毫秒)，返回限制响应
+    if (timeDifference < 5000) {
+      ctx.status = 429; // 状态码429表示请求过多
+      ctx.body = {
+        code: 429,
+        message: '请求过于频繁，请稍后再试',
+        data: null
+      };
+      return;
+    }
+  }
+
+  // 更新该IP和端点的最后请求时间
+  ipEndpointRequestMap.set(key, currentTime);
+
+  // 清理过期的记录
+  for (const [storedKey, time] of ipEndpointRequestMap.entries()) {
+    if (currentTime - time >= 5000) {
+      ipEndpointRequestMap.delete(storedKey);
+    }
+  }
+
+  // 继续处理请求
+  await next();
+};
+
+app.use(rateLimitMiddleware)
   .use(koaBody())
   .use(cors())
   .use(router.routes())
