@@ -873,12 +873,14 @@ const rateLimitMiddleware = async (ctx, next) => {
     
     // 如果时间间隔小于5秒(5000毫秒)，返回限制响应
     if (timeDifference < 5000) {
-      ctx.status = 429; // 状态码429表示请求过多
-      ctx.body = {
-        code: 429,
-        message: '请求过于频繁，请稍后再试',
-        data: null
-      };
+      // ctx.status = 429; // 状态码429表示请求过多
+      ctx.status = 200; // 状态码429表示请求过多
+      // ctx.body = {
+      //   code: 429,
+      //   message: '请求过于频繁，请稍后再试',
+      //   data: null
+      // };
+      ctx.body = JSON.stringify({ status: -1, data: {}, msg: '请求过于频繁，请稍后再试' })
       return;
     }
   }
@@ -897,9 +899,63 @@ const rateLimitMiddleware = async (ctx, next) => {
   await next();
 };
 
-app.use(rateLimitMiddleware)
-  .use(koaBody())
+// const MAX_REQUESTS = 60; // 最大请求次数
+const MAX_REQUESTS = 15; // 最大请求次数
+const WINDOW_TIME = 60 * 1000; // 时间窗口（1分钟）
+
+// 存储IP请求记录的Map：{ ip: { count: number, firstRequestTime: Date } }
+const requestRecords = new Map();
+
+const rateLimit = async (ctx, next) => {
+  // 获取客户端IP（考虑代理服务器）
+  const clientIp = ctx.headers['x-forwarded-for'] || ctx.ip;
+
+  // 获取当前时间戳
+  const now = Date.now();
+
+  // 检查IP是否已存在记录
+  if (requestRecords.has(clientIp)) {
+    const record = requestRecords.get(clientIp);
+    
+    // 计算当前请求与首次请求的时间差
+    const timeDiff = now - record.firstRequestTime;
+    
+    // 如果时间差小于时间窗口（1分钟）
+    if (timeDiff < WINDOW_TIME) {
+      // 请求次数+1
+      record.count += 1;
+      
+      // 如果请求次数超过限制
+      if (record.count > MAX_REQUESTS) {
+        // ctx.status = 429;
+        // ctx.body = { error: 'Too Many Requests' };
+        ctx.status = 200; // 状态码429表示请求过多
+        ctx.body = JSON.stringify({ status: -1, data: {}, msg: '请求过于频繁，请稍后再试' })
+        return;
+      }
+    } else {
+      // 时间窗口已过，重置记录
+      requestRecords.set(clientIp, {
+        count: 1,
+        firstRequestTime: now
+      });
+    }
+  } else {
+    // 新IP，创建记录
+    requestRecords.set(clientIp, {
+      count: 1,
+      firstRequestTime: now
+    });
+  }
+
+  // 继续处理请求
+  await next();
+};
+
+app.use(koaBody())
   .use(cors())
+  .use(rateLimit)
+  .use(rateLimitMiddleware)
   .use(router.routes())
   .use(router.allowedMethods());
 
